@@ -14,11 +14,10 @@ using namespace std;
 using namespace cv;
 using namespace cv::cuda;
 
-void CPU_TestCanny(Mat img) {
+Mat CPU_TestCanny(Mat img) {
 	Mat imgBlurred;
 	Mat imgCanny;
 
-	namedWindow("imgCanny", cv::WINDOW_FULLSCREEN);
 	int64 t0 = cv::getTickCount();
 
 	GaussianBlur(img, imgBlurred, cv::Size(5, 5), 0.5);
@@ -27,12 +26,9 @@ void CPU_TestCanny(Mat img) {
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
 	cout << "Canny CPU time: " << seconds << endl;
-	imshow("imgCanny", imgCanny);
-
-	waitKey(0);
 }
 
-void CPU_TestSobel(Mat img) {
+Mat CPU_TestSobel(Mat img) {
 	Mat imgBlurred;
 	Mat grad;
 	Mat grad_x, grad_y;
@@ -40,7 +36,7 @@ void CPU_TestSobel(Mat img) {
 	int ksize = 3;
 	int scale = 1;
 	int delta = 1;
-	namedWindow("sobel", cv::WINDOW_FULLSCREEN);
+
 	int64 t0 = cv::getTickCount();
 	GaussianBlur(img, imgBlurred, cv::Size(5, 5), 0.5);
 
@@ -56,15 +52,12 @@ void CPU_TestSobel(Mat img) {
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
 	cout << "Sobel CPU time: " << seconds << endl;
-
-	imshow("sobel", grad);
-	waitKey(0);
+	return grad;
 }
 
-void CPU_TestLaplacian(Mat img) {
+Mat CPU_TestLaplacian(Mat img) {
 
 	Mat imgBlurred, dst, abs_dst;
-	namedWindow("laplacian", cv::WINDOW_AUTOSIZE);
 	int64 t0 = cv::getTickCount();
 	GaussianBlur(img, imgBlurred, cv::Size(3, 3), 0, 0, BORDER_DEFAULT);
 
@@ -73,17 +66,16 @@ void CPU_TestLaplacian(Mat img) {
 	convertScaleAbs(dst, abs_dst);
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
-	cout << "Laplacian CPU time: " << seconds;
-	imshow("laplacian", abs_dst);
-	waitKey(0);
+	cout << "Laplacian CPU time: " << seconds << endl;
+
+	return abs_dst;
 }
 
-void CPU_TestPrewitt(Mat img)
+Mat CPU_TestPrewitt(Mat img)
 {
 	Mat imgBlurred,kernelx,kernely;
 	Mat prewitt_x,prewitt_y,prewitt;
 
-	namedWindow("imgPrewitt", cv::WINDOW_FULLSCREEN);
 	int64 t0 = cv::getTickCount();
 
 	float kernelxData[9] = {1,1,1,0,0,0,-1,-1,-1};
@@ -98,37 +90,33 @@ void CPU_TestPrewitt(Mat img)
 	cv::addWeighted(prewitt_x, 0.5, prewitt_y, 0.5, 0, prewitt);
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
-	cout << "Prewitt CPU time: " << seconds;
-	
-	imshow("imgPrewitt", prewitt);
-	waitKey(0);
+	cout << "Prewitt CPU time: " << seconds << endl;
+
+	return prewitt;
 
 }
 
-void CPU_TestRoberts(Mat img)
+Mat CPU_TestRoberts(Mat img)
 {
 	Mat imgBlurred, kernelx, kernely;
 	Mat robert_x, robert_y, robert;
 
-	namedWindow("imgRoberts", cv::WINDOW_FULLSCREEN);
 	int64 t0 = cv::getTickCount();
 
 	float kernelxData[4] = {1,0,0,-1};
 	float kernelyData[4] = { 0,1,-1,0 };
 	kernelx = Mat(2, 2, CV_32F, kernelxData);
 	kernely = Mat(2, 2, CV_32F, kernelyData);
-	GaussianBlur(img, imgBlurred, cv::Size(5, 5), 0.5);
+	GaussianBlur(img, imgBlurred, cv::Size(3, 3), 0.5);
 
 	filter2D(imgBlurred, robert_x, -1, kernelx);
 	filter2D(imgBlurred, robert_y, -1, kernely);
 	
-
-	cv::addWeighted(robert_x, 0.5, robert_y, 0.5, 0, robert);
+	cv::addWeighted(robert_x, 2, robert_y, 2, 0, robert);
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
-	cout << "Roberts CPU time: " << seconds;
+	cout << "Roberts CPU time: " << seconds << endl;
 
-	imshow("imgRoberts", robert);
-	waitKey(0);
+	return robert;
 
 }

@@ -4,9 +4,10 @@ using namespace cv;
 #ifndef GPU_HPP
 #define GPU_HPP
 
-void GPU_TestCanny(Mat img);
-void GPU_TestSobel(Mat img);
-void GPU_TestLaplacian(Mat img);
-void GPU_TestPrewitt(Mat img);
-
+Mat GPU_TestCanny(Mat img);
+Mat GPU_TestSobel(Mat img);
+Mat GPU_TestLaplacian(Mat img);
+Mat GPU_TestPrewitt(Mat img);
+Mat GPU_TestRoberts(Mat img);
+void GPU_Initialization(Mat img);
 #endif 

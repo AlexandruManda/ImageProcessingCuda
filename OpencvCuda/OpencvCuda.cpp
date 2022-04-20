@@ -10,31 +10,74 @@
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudafeatures2d.hpp>
 #include "Gpu.h" 
+#include "omp.h"
 #include "Cpu.h"
+#include <mutex>
 
-#define IMG_PATH "images/895.jpg"
+#define IMG_PATH "images/*.jpg"
 
 using namespace std;
 using namespace cv;
 using namespace cv::cuda;
 
 void WEBCAM_Test();
+vector<Mat> input;
+vector<Mat> output;
+vector<String> fileNames;
 
 int main()
 {
-	Mat img = cv::imread(IMG_PATH, 0);
+	Mutex mutex;
+	//Add filename to vector of strings
+	glob(IMG_PATH, fileNames, false);
+	
+	//Get size of the filenameVector
+	int  count = fileNames.size(); 
 
+/*------------Initialization of the GPU ------------*/
+
+	Mat img = imread("images/895.jpg", IMREAD_GRAYSCALE);
+	GPU_Initialization(img);
+
+/*-------------End of initialization --------------*/
+	
+	int64 t0 = cv::getTickCount();
+	
+#pragma omp parallel for num_threads(12)
+	for (int i = 0; i < count; i++) {
+		Mat img = imread(fileNames[i], IMREAD_GRAYSCALE);
+		
+		mutex.lock();
+		Mat result = GPU_TestRoberts(img);
+		
+		stringstream ss;
+		ss << "Processed/image" << (i) << ".jpg";
+		string filename = ss.str();
+		imwrite(filename, result);
+		mutex.unlock();
+		
+	}
+	int64 t1 = cv::getTickCount();
+	double seconds = (t1 - t0) / cv::getTickFrequency();
+	cout << seconds;
+
+	
+	
 	//printCudaDeviceInfo(0);
-	//CPU_TestCanny(img);
-	//CPU_TestSobel(img);
-	CPU_TestLaplacian(img);
-	//GPU_TestCanny(img);
-	//GPU_TestLaplacian(img);
+	/*CPU_TestCanny(img);
+	GPU_TestCanny(img);*/
+	/*CPU_TestSobel(img);
+	GPU_TestSobel(img);*/
+	/*CPU_TestLaplacian(img);
+	GPU_TestLaplacian(img);*/
+	
+	/*CPU_TestPrewitt(img);
+	GPU_TestPrewitt(img);*/
+
+	/*CPU_TestRoberts(img);
+	GPU_TestRoberts(img);*/
+	
 	//WEBCAM_Test();
-	//GPU_TestPrewitt(img);
-	//CPU_TestPrewitt(img);
-	//CPU_TestRoberts(img);
-	//GPU_TestSobel(img);
 }
 
 
@@ -51,31 +94,8 @@ void WEBCAM_Test()
 		auto start = getTickCount();
 
 		cap.read(img);
-
-		imgGpu.upload(img);
-
-		cv::cuda::cvtColor(imgGpu, imgGpu, COLOR_BGR2GRAY);
-		auto gaussianFilter = cv::cuda::createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 0.5);
-		gaussianFilter->apply(imgGpu, imgGpu);
-
-		//Canny filter to each frame from webcam
-		auto cannyOperator = cv::cuda::createCannyEdgeDetector(20, 50);
-		cannyOperator->detect(imgGpu, imgGpu);
-
-		//Laplacian filter to each frame from webcam
-		/*gaussianFilter->apply(imgGpu, imgGpu);
-		auto laplacianOperator = cv::cuda::createLaplacianFilter(CV_8UC1, CV_8UC1,3, 2, BORDER_DEFAULT);
-		laplacianOperator->apply(imgGpu, imgGpu);*/
-
-		//Sobel filter to each frame from webcam
-		auto sobelOperator_X = createSobelFilter(CV_8UC1, CV_8UC1, 1, 0, ksize, scale);
-		auto sobelOperator_Y = createSobelFilter(CV_8UC1, CV_8UC1, 0, 1, ksize, scale);
-		sobelOperator_X->apply(imgGpu, grad_x);
-		sobelOperator_Y->apply(imgGpu, grad_y);
-		cv::cuda::addWeighted(grad_x, 0.5, grad_y, 0.5, 0, imgGpu);
-
-		imgGpu.download(img);
-
+		cv::cvtColor(img, img, COLOR_BGR2GRAY);
+		img = GPU_TestPrewitt(img);
 
 		auto end = getTickCount();
 		auto totalTime = (end - start) / getTickFrequency();
