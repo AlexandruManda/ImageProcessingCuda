@@ -20,12 +20,14 @@ Mat CPU_TestCanny(Mat img) {
 
 	int64 t0 = cv::getTickCount();
 
-	GaussianBlur(img, imgBlurred, cv::Size(5, 5), 0.5);
+	GaussianBlur(img, imgBlurred, cv::Size(3, 3), 0.5);
 	Canny(imgBlurred, imgCanny, 50, 100);
 
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
 	cout << "Canny CPU time: " << seconds << endl;
+
+	return imgCanny;
 }
 
 Mat CPU_TestSobel(Mat img) {

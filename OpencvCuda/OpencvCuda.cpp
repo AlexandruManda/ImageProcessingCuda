@@ -21,8 +21,7 @@ using namespace cv;
 using namespace cv::cuda;
 
 void WEBCAM_Test();
-vector<Mat> input;
-vector<Mat> output;
+
 vector<String> fileNames;
 
 int main()
@@ -42,26 +41,26 @@ int main()
 /*-------------End of initialization --------------*/
 	
 	int64 t0 = cv::getTickCount();
-	
+
 #pragma omp parallel for num_threads(12)
 	for (int i = 0; i < count; i++) {
-		Mat img = imread(fileNames[i], IMREAD_GRAYSCALE);
+		Mat img2 = imread(fileNames[i], IMREAD_GRAYSCALE);
 		
-		mutex.lock();
-		Mat result = GPU_TestRoberts(img);
-		
+		HostMem pinned_input(img2,HostMem::AllocType::PAGE_LOCKED);
+		HostMem pinned_output(HostMem::AllocType::PAGE_LOCKED);
+		GPU_TestCanny(img2,pinned_input,pinned_output);
+
+		//Mat pinned_output = CPU_TestCanny(img2);
 		stringstream ss;
 		ss << "Processed/image" << (i) << ".jpg";
 		string filename = ss.str();
-		imwrite(filename, result);
-		mutex.unlock();
-		
+		imwrite(filename, pinned_output);
+			
 	}
 	int64 t1 = cv::getTickCount();
 	double seconds = (t1 - t0) / cv::getTickFrequency();
 	cout << seconds;
 
-	
 	
 	//printCudaDeviceInfo(0);
 	/*CPU_TestCanny(img);
@@ -95,7 +94,7 @@ void WEBCAM_Test()
 
 		cap.read(img);
 		cv::cvtColor(img, img, COLOR_BGR2GRAY);
-		img = GPU_TestPrewitt(img);
+		//img = GPU_TestPrewitt(img);
 
 		auto end = getTickCount();
 		auto totalTime = (end - start) / getTickFrequency();

@@ -1,2 +1,3 @@
-﻿  Gpu.cpp
+﻿  OpencvCuda.cpp
+D:\FACULTATE\AUTOMATICA\Anul3\SEM2\Parallel & Distributed Algorithms\Proiect\OpencvCuda\OpencvCuda\OpencvCuda.cpp(35,31): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   OpencvCuda.vcxproj -> D:\FACULTATE\AUTOMATICA\Anul3\SEM2\Parallel & Distributed Algorithms\Proiect\OpencvCuda\x64\Debug\OpencvCuda.exe
