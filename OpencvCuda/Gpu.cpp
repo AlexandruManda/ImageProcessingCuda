@@ -15,181 +15,105 @@ using namespace std;
 using namespace cv;
 using namespace cv::cuda;
 
-void GPU_TestCanny(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output) {
+
+void GPU_TestCanny(const Filters& filters,const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream) {
 	GpuMat imgBlurred;
-	Stream stream1, stream2, stream3;
+	
 
-	imgBlurred.upload(input,stream1);
-	stream1.waitForCompletion();
+	imgBlurred.upload(input,stream);
 
-	auto gaussianFilter = cv::cuda::createGaussianFilter(CV_8UC1, CV_8UC1, Size(5, 5), 0.5);
-	gaussianFilter->apply(imgBlurred, imgBlurred,stream2);
-	stream2.waitForCompletion();
+	filters.gaussian->apply(imgBlurred, imgBlurred,stream);
+	//stream.waitForCompletion();
+	auto cannyOperator = createCannyEdgeDetector(50, 100);
+	cannyOperator->detect(imgBlurred, imgBlurred, stream);
+	//filters.canny->detect(imgBlurred, imgBlurred,stream);
+	//stream.waitForCompletion();
 
-	auto cannyOperator = cv::cuda::createCannyEdgeDetector(50, 100);
-	cannyOperator->detect(imgBlurred, imgBlurred,stream3);
-	//stream3.waitForCompletion();
-
-	imgBlurred.download(output,stream1);
-
+	imgBlurred.download(output,stream);
+	//stream.waitForCompletion();
 	
 }
 
-void GPU_TestSobel(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output)
+void GPU_TestSobel(const Filters& filters,const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream)
 {
-	int ksize = 3;
-	int scale = 1;
+
 	GpuMat imgBlurred, grad_x, grad_y, abs_x, abs_y;
-	Stream stream1, stream2, stream3, stream4;
 
 
-	imgBlurred.upload(input,stream1);
-	stream1.waitForCompletion();
+	imgBlurred.upload(input,stream);
 
-	auto gaussianFilter = cv::cuda::createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 1);
-	gaussianFilter->apply(imgBlurred, imgBlurred,stream2);
-	stream2.waitForCompletion();
 
-	auto sobelOperator_X = createSobelFilter(CV_8UC1, CV_8UC1, 1, 0, ksize, scale);
-	auto sobelOperator_Y = createSobelFilter(CV_8UC1, CV_8UC1, 0, 1, ksize, scale);
+	filters.gaussian->apply(imgBlurred, imgBlurred, stream);
+	
 
-	sobelOperator_X->apply(imgBlurred, grad_x,stream3);
-	stream3.waitForCompletion();
+	filters.sobelx->apply(imgBlurred, grad_x, stream);
+	filters.sobely->apply(imgBlurred, grad_y, stream);
+	
 
-	sobelOperator_Y->apply(imgBlurred, grad_y,stream4);
-	stream4.waitForCompletion();
+	cv::cuda::addWeighted(grad_x, 1, grad_y, 1, 0, imgBlurred,-1,stream);
+	
 
-	cv::cuda::addWeighted(grad_x, 1, grad_y, 1, 0, imgBlurred,-1,stream4);
-	stream4.waitForCompletion();
-
-	imgBlurred.download(output,stream1);
-
+	imgBlurred.download(output,stream);
 	
 }
 
-void GPU_TestLaplacian(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output) {
+void GPU_TestLaplacian(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream) {
 	GpuMat imgBlurred;
-	Stream stream1, stream2, stream3;
 
 
-	imgBlurred.upload(input,stream1);
-	stream1.waitForCompletion();
+	imgBlurred.upload(input,stream);
 
-	auto gaussianFilter = cv::cuda::createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 1);
-	gaussianFilter->apply(imgBlurred, imgBlurred,stream2);
-	stream2.waitForCompletion();
-	
-	auto laplacianOperator = cv::cuda::createLaplacianFilter(CV_8UC1, CV_8UC1, 3, 1, BORDER_DEFAULT);
-	laplacianOperator->apply(imgBlurred, imgBlurred,stream3);
-	stream3.waitForCompletion();
 
-	imgBlurred.download(output,stream1);
+	filters.gaussian->apply(imgBlurred, imgBlurred,stream);
 
-	
+
+	filters.laplacian->apply(imgBlurred, imgBlurred,stream);
+
+	imgBlurred.download(output,stream);
+
 }
 
-void GPU_TestPrewitt(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output)
+void GPU_TestPrewitt(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream)
 {
 	GpuMat imgBlurred,prewitt,prewitt_x,prewitt_y;
-	Stream stream1, stream2, stream3, stream4;
+
 	
-	imgBlurred.upload(input,stream1);
+	imgBlurred.upload(input,stream);
 
-	stream1.waitForCompletion();
-
-	float kernelxData[9] = { 1,1,1,0,0,0,-1,-1,-1 };
-	float kernelyData[9] = { -1,0,1,-1,0,1,-1,0,1 };
-	Mat kernelx = Mat(3, 3, CV_32F, kernelxData);
-	Mat kernely = Mat(3, 3, CV_32F, kernelyData);
 	
-	auto gaussianFilter = createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 1);
-	gaussianFilter->apply(imgBlurred, imgBlurred,stream1);
-	stream1.waitForCompletion();
+	filters.gaussian->apply(imgBlurred, imgBlurred,stream);
 	
-	auto linearFilterx = createLinearFilter(CV_8UC1, CV_8UC1, kernelx);
-	linearFilterx->apply(imgBlurred, prewitt_x,stream2);
-	stream2.waitForCompletion();
+	filters.prewittx->apply(imgBlurred, prewitt_x,stream);
 
-	auto linearFiltery = createLinearFilter(CV_8UC1, CV_8UC1, kernely);
-	linearFiltery->apply(imgBlurred, prewitt_y,stream3);
-	stream3.waitForCompletion();
+	filters.prewitty->apply(imgBlurred, prewitt_y,stream);
 
-	cv::cuda::addWeighted(prewitt_x, 0.5, prewitt_y, 0.5, 0, imgBlurred,-1,stream4);
-	stream4.waitForCompletion();
+	cv::cuda::addWeighted(prewitt_x, 0.5, prewitt_y, 0.5, 0, imgBlurred,-1,stream);
 
-	imgBlurred.download(output,stream1);
+	imgBlurred.download(output,stream);
 
 	
 }
 
-void GPU_TestRoberts(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output)
+void GPU_TestRoberts(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream)
 {
 	GpuMat imgBlurred, robert, robert_x, robert_y;
-	Stream stream1, stream2,stream3,stream4;
 
-	imgBlurred.upload(input,stream1);
 
-	stream1.waitForCompletion();
+	imgBlurred.upload(input,stream);
 
-	float kernelxData[4] = { 1,0,0,-1 };
-	float kernelyData[4] = { 0,1,-1,0 };
-	Mat kernelx = Mat(2, 2, CV_32F, kernelxData);
-	Mat kernely = Mat(2, 2, CV_32F, kernelyData);
-
-	auto gaussianFilter = createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 0.5);
-	gaussianFilter->apply(imgBlurred, imgBlurred,stream1);
-	stream1.waitForCompletion();
+	filters.gaussian->apply(imgBlurred, imgBlurred,stream);
 	
-	auto linearFilterx = createLinearFilter(CV_8UC1, CV_8UC1, kernelx);
-	linearFilterx->apply(imgBlurred, robert_x,stream2);
-	stream2.waitForCompletion();
+	filters.robertx->apply(imgBlurred, robert_x,stream);
 	
-	auto linearFiltery = createLinearFilter(CV_8UC1, CV_8UC1, kernely);
-	linearFiltery->apply(imgBlurred, robert_x,stream3);
-	stream3.waitForCompletion();
+	filters.roberty->apply(imgBlurred, robert_x,stream);
 	
-	cv::cuda::addWeighted(robert_x, 2, robert_x, 2, 0, imgBlurred,-1,stream4);
-	stream4.waitForCompletion();
+	cv::cuda::addWeighted(robert_x, 2, robert_x, 2, 0, imgBlurred,-1,stream);
 	
-	imgBlurred.download(output,stream1);
+	imgBlurred.download(output,stream);
 
 
 }
 
-Mat GPU_TestRoberts(Mat img)
-{
-	GpuMat imgBlurred, robert, robert_x, robert_y;
-	Stream stream1, stream2, stream3, stream4;
-
-	imgBlurred.upload(img, stream1);
-
-	stream1.waitForCompletion();
-
-	float kernelxData[4] = { 1,0,0,-1 };
-	float kernelyData[4] = { 0,1,-1,0 };
-	Mat kernelx = Mat(2, 2, CV_32F, kernelxData);
-	Mat kernely = Mat(2, 2, CV_32F, kernelyData);
-
-	auto gaussianFilter = createGaussianFilter(CV_8UC1, CV_8UC1, Size(3, 3), 0.5);
-	gaussianFilter->apply(imgBlurred, imgBlurred, stream1);
-	stream1.waitForCompletion();
-
-	auto linearFilterx = createLinearFilter(CV_8UC1, CV_8UC1, kernelx);
-	linearFilterx->apply(imgBlurred, robert_x, stream2);
-	stream2.waitForCompletion();
-
-	auto linearFiltery = createLinearFilter(CV_8UC1, CV_8UC1, kernely);
-	linearFiltery->apply(imgBlurred, robert_x, stream3);
-	stream3.waitForCompletion();
-
-	cv::cuda::addWeighted(robert_x, 2, robert_x, 2, 0, imgBlurred, -1, stream4);
-	stream4.waitForCompletion();
-
-	imgBlurred.download(img, stream1);
-
-	return img;
-
-}
 
 void GPU_Initialization(Mat img)
 {

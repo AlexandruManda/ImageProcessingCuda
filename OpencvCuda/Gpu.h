@@ -1,15 +1,16 @@
 #include <opencv2/core/mat.hpp>
+#include "ProjectTypes.h"
 using namespace cv;
 using namespace cv::cuda;
+using namespace std;
 
 #ifndef GPU_HPP
 #define GPU_HPP
 
-void GPU_TestCanny(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output);
-void GPU_TestSobel(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output);
-void GPU_TestLaplacian(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output);
-void GPU_TestPrewitt(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output);
-void GPU_TestRoberts(Mat img, const cv::cuda::HostMem& input, cv::cuda::HostMem& output);
-Mat GPU_TestRoberts(Mat img);
-void GPU_Initialization(Mat img);
+	void GPU_TestCanny(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream);
+	void GPU_TestSobel(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream);
+	void GPU_TestLaplacian(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream);
+	void GPU_TestPrewitt(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream);
+	void GPU_TestRoberts(const Filters& filters, const cv::cuda::HostMem& input, cv::cuda::HostMem& output, Stream stream);
+	void GPU_Initialization(Mat img);
 #endif 
